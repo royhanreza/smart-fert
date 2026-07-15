@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../core/app_colors.dart';
 
+import 'skeleton.dart';
+
 enum SensorHighlightMode { value, status }
 
 /// Card widget for displaying a sensor metric.
@@ -16,6 +18,7 @@ class SensorCard extends StatelessWidget {
   final String status;
   final Color statusColor;
   final SensorHighlightMode highlightMode;
+  final bool isLoading;
 
   const SensorCard({
     super.key,
@@ -26,6 +29,7 @@ class SensorCard extends StatelessWidget {
     required this.status,
     this.statusColor = AppColors.primary,
     this.highlightMode = SensorHighlightMode.value,
+    this.isLoading = false,
   });
 
   @override
@@ -82,7 +86,17 @@ class SensorCard extends StatelessWidget {
           const SizedBox(height: 16),
 
           // Value
-          if (isValueMode) ...[
+          if (isLoading) ...[
+            if (isValueMode) ...[
+              const Skeleton(width: 80, height: 32, borderRadius: 6),
+              const SizedBox(height: 12),
+              const Skeleton(width: 60, height: 16, borderRadius: 4),
+            ] else ...[
+              const Skeleton(width: 60, height: 22, borderRadius: 6),
+              const SizedBox(height: 14),
+              const Skeleton(width: 80, height: 26, borderRadius: 20),
+            ]
+          ] else if (isValueMode) ...[
             Row(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [

@@ -1,17 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:percent_indicator/circular_percent_indicator.dart';
+import 'skeleton.dart';
 import '../core/app_colors.dart';
 
 /// Large circular gauge widget showing soil moisture percentage.
 class MoistureGauge extends StatelessWidget {
   final double percentage; // 0.0 - 100.0
   final String status;
+  final bool isLoading;
 
   const MoistureGauge({
     super.key,
     required this.percentage,
     required this.status,
+    this.isLoading = false,
   });
 
   @override
@@ -68,8 +71,8 @@ class MoistureGauge extends StatelessWidget {
                 CircularPercentIndicator(
                   radius: 80,
                   lineWidth: 10,
-                  percent: clampedPercent,
-                  animation: true,
+                  percent: isLoading ? 0.0 : clampedPercent,
+                  animation: !isLoading,
                   animationDuration: 1200,
                   circularStrokeCap: CircularStrokeCap.round,
                   progressColor: AppColors.primary,
@@ -77,34 +80,40 @@ class MoistureGauge extends StatelessWidget {
                   center: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text(
-                        '${percentage.toStringAsFixed(0)}%',
-                        style: GoogleFonts.outfit(
-                          fontSize: 40,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.textPrimary,
-                          height: 1.1,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppColors.primaryTint,
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Text(
-                          status,
+                      if (isLoading) ...[
+                        const Skeleton(width: 80, height: 36, borderRadius: 6),
+                        const SizedBox(height: 10),
+                        const Skeleton(width: 60, height: 20, borderRadius: 20),
+                      ] else ...[
+                        Text(
+                          '${percentage.toStringAsFixed(0)}%',
                           style: GoogleFonts.outfit(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.primary,
+                            fontSize: 40,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.textPrimary,
+                            height: 1.1,
                           ),
                         ),
-                      ),
+                        const SizedBox(height: 4),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: AppColors.primaryTint,
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text(
+                            status,
+                            style: GoogleFonts.outfit(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.primary,
+                            ),
+                          ),
+                        ),
+                      ],
                     ],
                   ),
                 ),

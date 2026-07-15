@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax_flutter/iconsax_flutter.dart';
+import 'package:firebase_database/firebase_database.dart';
 import '../core/app_colors.dart';
 import '../widgets/moisture_gauge.dart';
 import '../widgets/menu_card.dart';
@@ -27,74 +28,130 @@ class HomePage extends StatelessWidget {
           ),
         ),
         child: SafeArea(
-          child: SingleChildScrollView(
-            physics: const BouncingScrollPhysics(),
-            padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Header
-                AnimatedListItem(index: 0, child: _buildHeader(context)),
-                const SizedBox(height: 28),
-
-                // Moisture Gauge
-                AnimatedListItem(
-                  index: 1,
-                  child: const MoistureGauge(percentage: 65, status: 'Cukup'),
-                ),
-                const SizedBox(height: 28),
-
-                // Section title
-                AnimatedListItem(
-                  index: 2,
-                  child: Padding(
-                    padding: const EdgeInsets.only(left: 4, bottom: 14),
-                    child: Text(
-                      'Menu',
-                      style: GoogleFonts.outfit(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.textPrimary,
+          child: RefreshIndicator(
+            color: AppColors.primary,
+            onRefresh: () async {
+              try {
+                await FirebaseDatabase.instance
+                    .ref('soil_monitoring/realtime/moisture')
+                    .get();
+              } catch (_) {}
+            },
+            child: SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(
+                parent: BouncingScrollPhysics(),
+              ),
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Header
+                  AnimatedListItem(index: 0, child: _buildHeader(context)),
+                  const SizedBox(height: 28),
+  
+                  // Moisture Gauge
+                  AnimatedListItem(
+                    index: 1,
+                    child: StreamBuilder<DatabaseEvent>(
+                      stream: FirebaseDatabase.instance
+                          .ref('soil_monitoring/realtime/moisture')
+                          .onValue,
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState == ConnectionState.waiting) {
+                          return const MoistureGauge(
+                            percentage: 0,
+                            status: '',
+                            isLoading: true,
+                          );
+                        }
+  
+                        final val = snapshot.data?.snapshot.value;
+                        if (val == null) {
+                          return const MoistureGauge(
+                            percentage: 0,
+                            status: '',
+                            isLoading: true,
+                          );
+                        }
+  
+                        double percentage = 65.0;
+                        if (val is num) {
+                          percentage = val.toDouble();
+                        } else if (val is String) {
+                          percentage = double.tryParse(val) ?? 65.0;
+                        }
+  
+                        // Calculate status
+                        String status = 'Cukup';
+                        if (percentage < 40) {
+                          status = 'Kurang';
+                        } else if (percentage <= 75) {
+                          status = 'Cukup';
+                        } else {
+                          status = 'Basah';
+                        }
+  
+                        return MoistureGauge(
+                          percentage: percentage,
+                          status: status,
+                        );
+                      },
+                    ),
+                  ),
+                  const SizedBox(height: 28),
+  
+                  // Section title
+                  AnimatedListItem(
+                    index: 2,
+                    child: Padding(
+                      padding: const EdgeInsets.only(left: 4, bottom: 14),
+                      child: Text(
+                        'Menu',
+                        style: GoogleFonts.outfit(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.textPrimary,
+                        ),
                       ),
                     ),
                   ),
-                ),
-
-                // Menu: Information
-                AnimatedListItem(
-                  index: 3,
-                  child: MenuCard(
-                    icon: Iconsax.chart_1,
-                    title: 'Informasi',
-                    subtitle: 'Data sensor tanah & cuaca',
-                    iconColor: AppColors.primary,
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        _buildPageRoute(const InformationPage()),
-                      );
-                    },
+  
+                  // Menu: Information
+                  AnimatedListItem(
+                    index: 3,
+                    child: MenuCard(
+                      icon: Iconsax.chart_1,
+                      title: 'Informasi',
+                      subtitle: 'Data sensor tanah & cuaca',
+                      iconColor: AppColors.primary,
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          _buildPageRoute(const InformationPage()),
+                        );
+                      },
+                    ),
                   ),
-                ),
-                const SizedBox(height: 12),
-
-                // Menu: Recommendation
-                AnimatedListItem(
-                  index: 4,
-                  child: MenuCard(
-                    icon: Iconsax.tree,
-                    title: 'Rekomendasi Pupuk',
-                    subtitle: 'Jumlah pupuk yang dibutuhkan',
-                    iconColor: AppColors.accent,
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        _buildPageRoute(const RecommendationPage()),
-                      );
-                    },
+                  const SizedBox(height: 12),
+  
+                  // Menu: Recommendation
+                  AnimatedListItem(
+                    index: 4,
+                    child: MenuCard(
+                      icon: Iconsax.tree,
+                      title: 'Rekomendasi Pupuk',
+                      subtitle: 'Jumlah pupuk yang dibutuhkan',
+                      iconColor: AppColors.accent,
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          _buildPageRoute(const RecommendationPage()),
+                        );
+                      },
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
